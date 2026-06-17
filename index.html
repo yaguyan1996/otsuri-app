@@ -2,466 +2,644 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>まとまりお釣り計算</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>お釣り計算</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="お釣り計算">
-  <meta name="theme-color" content="#4299e1">
+  <meta name="theme-color" content="#6C63FF">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    :root {
+      --primary: #6C63FF;
+      --primary-light: #EEF0FF;
+      --success: #22C55E;
+      --success-light: #F0FDF4;
+      --info: #3B82F6;
+      --info-light: #EFF6FF;
+      --warn: #F59E0B;
+      --bg: #F8F9FF;
+      --card: #FFFFFF;
+      --text: #1E1B4B;
+      --sub: #6B7280;
+      --border: #E5E7EB;
+      --nav-h: 64px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-      background: #f0f4f8;
+      background: var(--bg);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px;
+      padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
     }
 
-    h1 {
-      font-size: 1.3rem;
-      color: #2d3748;
-      margin-bottom: 20px;
+    /* ヘッダー */
+    .header {
+      background: var(--primary);
+      padding: 16px 20px 12px;
+      padding-top: calc(16px + env(safe-area-inset-top));
       text-align: center;
     }
+    .header h1 { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
+    .header p  { color: rgba(255,255,255,0.75); font-size: 0.75rem; margin-top: 2px; }
 
+    /* タブコンテンツ */
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* カード */
     .card {
-      background: #fff;
-      border-radius: 16px;
+      background: var(--card);
+      border-radius: 20px;
       padding: 20px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 16px rgba(108,99,255,0.08);
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--sub);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
     }
 
-    label {
-      display: block;
-      font-size: 0.85rem;
-      color: #718096;
-      margin-bottom: 6px;
-    }
-
-    .input-wrap {
+    /* 金額表示 */
+    .amount-display {
+      background: var(--primary-light);
+      border-radius: 16px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
-      background: #edf2f7;
-      border-radius: 12px;
-      padding: 12px 16px;
       gap: 8px;
+      margin-bottom: 12px;
     }
-
-    .yen {
-      font-size: 1.4rem;
-      color: #4a5568;
-      font-weight: 600;
-    }
-
-    #amount {
+    .amount-display .yen { font-size: 1.6rem; color: var(--primary); font-weight: 800; }
+    .amount-display input {
       flex: 1;
-      font-size: 2rem;
-      font-weight: 700;
-      color: #1a202c;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--text);
       background: transparent;
       border: none;
       outline: none;
-      width: 100%;
       text-align: right;
+      min-width: 0;
     }
-
-    #amount::placeholder { color: #cbd5e0; font-size: 1.5rem; }
-
-    .clear-btn {
-      background: #cbd5e0;
+    .amount-display input::placeholder { color: #C4B5FD; }
+    .amount-display .clear-btn {
+      background: #C4B5FD;
       border: none;
-      border-radius: 8px;
-      width: 32px;
-      height: 32px;
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
       font-size: 1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #4a5568;
+      color: var(--primary);
       flex-shrink: 0;
     }
 
+    /* 税率トグル */
+    .tax-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .tax-btn {
+      flex: 1;
+      padding: 8px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--card);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--sub);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tax-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .tax-result {
+      font-size: 0.8rem;
+      color: var(--sub);
+      text-align: right;
+      margin-bottom: 4px;
+      min-height: 18px;
+    }
+
+    /* テンキー */
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      margin-top: 16px;
     }
-
     .num-btn {
-      background: #edf2f7;
+      background: var(--bg);
       border: none;
-      border-radius: 12px;
-      padding: 18px;
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: #2d3748;
-      cursor: pointer;
-      transition: background 0.12s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .num-btn:active { background: #bee3f8; }
-    .num-btn.zero { grid-column: span 2; }
-    .num-btn.del { background: #fed7d7; color: #c53030; }
-    .num-btn.del:active { background: #fc8181; }
-
-    .results {
-      width: 100%;
-      max-width: 420px;
-    }
-
-    .results h2 {
-      font-size: 0.85rem;
-      color: #718096;
-      margin-bottom: 10px;
-      padding-left: 4px;
-    }
-
-    .result-item {
-      background: #fff;
       border-radius: 14px;
-      padding: 16px 18px;
+      padding: 18px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.1s, transform 0.08s;
+      user-select: none;
+    }
+    .num-btn:active { background: #DDD6FE; transform: scale(0.94); }
+    .num-btn.zero { grid-column: span 2; }
+    .num-btn.del { background: #FEE2E2; color: #DC2626; }
+    .num-btn.del:active { background: #FECACA; }
+
+    /* 結果リスト */
+    .result-item {
+      border-radius: 16px;
+      padding: 14px 18px;
       margin-bottom: 10px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border: 2px solid var(--border);
+      background: var(--card);
+      transition: transform 0.1s;
       cursor: pointer;
-      transition: transform 0.1s, box-shadow 0.1s;
-      -webkit-tap-highlight-color: transparent;
     }
-
     .result-item:active { transform: scale(0.98); }
-
-    .result-item.best {
-      border: 2px solid #48bb78;
-      background: #f0fff4;
-    }
-
-    .result-item.exact {
-      border: 2px solid #4299e1;
-      background: #ebf8ff;
-    }
-
-    .pay-amount {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #1a202c;
-    }
-
-    .pay-label {
-      font-size: 0.75rem;
-      color: #718096;
-      margin-top: 2px;
-    }
-
-    .change-box {
-      text-align: right;
-    }
-
-    .change-amount {
-      font-size: 1.2rem;
-      font-weight: 700;
-    }
-
-    .change-amount.zero { color: #4299e1; }
-    .change-amount.round { color: #38a169; }
-
-    .change-label {
-      font-size: 0.75rem;
-      color: #718096;
-      margin-top: 2px;
-    }
-
+    .result-item.best  { border-color: var(--success); background: var(--success-light); }
+    .result-item.exact { border-color: var(--info);    background: var(--info-light); }
+    .pay-amount { font-size: 1.35rem; font-weight: 800; color: var(--text); }
+    .pay-sub    { font-size: 0.72rem; color: var(--sub); margin-top: 3px; }
+    .change-amt { font-size: 1.2rem; font-weight: 800; text-align: right; }
+    .change-amt.zero  { color: var(--info); }
+    .change-amt.round { color: var(--success); }
+    .change-lbl { font-size: 0.72rem; color: var(--sub); text-align: right; margin-top: 3px; }
     .badge {
-      font-size: 0.65rem;
-      background: #48bb78;
-      color: #fff;
+      display: inline-block;
+      font-size: 0.62rem;
+      font-weight: 700;
       border-radius: 6px;
-      padding: 2px 6px;
+      padding: 2px 7px;
       margin-left: 6px;
       vertical-align: middle;
     }
+    .badge.green { background: var(--success); color: #fff; }
+    .badge.blue  { background: var(--info);    color: #fff; }
 
-    .badge.exact-badge { background: #4299e1; }
-
-    .empty {
-      text-align: center;
-      color: #a0aec0;
-      padding: 32px 0;
-      font-size: 1rem;
+    /* 割り勘 */
+    .split-input-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
     }
-
-    .coin-hint {
-      font-size: 0.72rem;
-      color: #a0aec0;
-      margin-top: 4px;
+    .split-label { font-size: 0.85rem; color: var(--sub); white-space: nowrap; }
+    .people-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 6px 12px;
     }
-
-    /* 使い方パネル */
-    .help-toggle {
+    .people-btn {
       background: none;
       border: none;
-      color: #718096;
-      font-size: 0.85rem;
+      font-size: 1.4rem;
+      color: var(--primary);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin: 0 auto 12px;
-      padding: 4px 8px;
-      border-radius: 8px;
-    }
-    .help-toggle:hover { background: #edf2f7; }
-
-    .help-panel {
-      width: 100%;
-      max-width: 420px;
-      background: #fffbeb;
-      border: 1px solid #f6e05e;
-      border-radius: 14px;
-      padding: 16px 18px;
-      margin-bottom: 16px;
-      display: none;
-    }
-    .help-panel.open { display: block; }
-
-    .help-panel h3 {
-      font-size: 0.9rem;
-      color: #744210;
-      margin-bottom: 10px;
-    }
-
-    .help-step {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      align-items: flex-start;
-    }
-
-    .step-num {
-      background: #f6ad55;
-      color: #fff;
-      border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      font-size: 0.75rem;
       font-weight: 700;
+      width: 30px;
+      line-height: 1;
+    }
+    .people-num { font-size: 1.2rem; font-weight: 800; color: var(--text); min-width: 24px; text-align: center; }
+    .split-result-box {
+      background: linear-gradient(135deg, var(--primary) 0%, #8B5CF6 100%);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      color: #fff;
+    }
+    .split-per { font-size: 2.4rem; font-weight: 800; }
+    .split-per-label { font-size: 0.85rem; opacity: 0.8; margin-top: 4px; }
+    .split-detail { font-size: 0.78rem; opacity: 0.7; margin-top: 8px; }
+
+    /* 履歴 */
+    .history-item {
       display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-total { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .history-sub   { font-size: 0.75rem; color: var(--sub); margin-top: 3px; }
+    .history-change { font-size: 1rem; font-weight: 700; color: var(--success); }
+    .history-time   { font-size: 0.72rem; color: var(--sub); }
+    .history-clear {
+      width: 100%;
+      padding: 12px;
+      background: #FEE2E2;
+      color: #DC2626;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .empty-state { text-align: center; color: var(--sub); padding: 40px 0; font-size: 0.95rem; }
+
+    /* ボトムナビ */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
+      gap: 4px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 8px 4px;
     }
-
-    .step-text {
-      font-size: 0.82rem;
-      color: #744210;
-      line-height: 1.5;
-    }
-
-    .help-legend {
-      margin-top: 12px;
-      border-top: 1px solid #f6e05e;
-      padding-top: 10px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-      font-size: 0.8rem;
-      color: #744210;
-    }
-
-    .legend-badge {
-      font-size: 0.65rem;
-      border-radius: 6px;
-      padding: 2px 6px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .legend-badge.green { background: #48bb78; color: #fff; }
-    .legend-badge.blue  { background: #4299e1; color: #fff; }
+    .nav-icon { font-size: 1.4rem; }
+    .nav-label { font-size: 0.65rem; font-weight: 600; color: var(--sub); }
+    .nav-btn.active .nav-label { color: var(--primary); }
+    .nav-btn.active .nav-icon  { filter: none; }
   </style>
 </head>
 <body>
-  <h1>💴 まとまりお釣り計算</h1>
 
-  <button class="help-toggle" onclick="toggleHelp()">
-    <span id="help-icon">▶</span> 使い方
-  </button>
+<div class="header">
+  <h1>💴 お釣り計算</h1>
+  <p>まとまったお釣りをかしこくもらう</p>
+</div>
 
-  <div class="help-panel" id="help-panel">
-    <h3>使い方</h3>
-    <div class="help-step">
-      <div class="step-num">1</div>
-      <div class="step-text">レジで表示された<strong>合計金額</strong>をテンキーで入力します。</div>
-    </div>
-    <div class="help-step">
-      <div class="step-num">2</div>
-      <div class="step-text">下に<strong>支払い提案</strong>が自動で表示されます。<br>お釣りがきりのいい金額になる支払い方を一覧で確認できます。</div>
-    </div>
-    <div class="help-step">
-      <div class="step-num">3</div>
-      <div class="step-text">好きな支払い方を選んでレジに伝えましょう。<br>各項目に「何円札×何枚」の内訳も表示されます。</div>
-    </div>
-    <div class="help-legend">
-      <div class="legend-item">
-        <span class="legend-badge green">おすすめ</span>
-        お釣りが最もまとまる支払い方
-      </div>
-      <div class="legend-item">
-        <span class="legend-badge blue">ちょうど</span>
-        ぴったり払う（お釣りなし）
-      </div>
-    </div>
-  </div>
-
+<!-- ===== 計算タブ ===== -->
+<div class="tab-content active" id="tab-calc">
   <div class="card">
-    <label>合計金額を入力</label>
-    <div class="input-wrap">
+    <div class="card-title">合計金額</div>
+    <div class="tax-row">
+      <button class="tax-btn active" onclick="setTax(0)"  id="tax0">税なし</button>
+      <button class="tax-btn"        onclick="setTax(8)"  id="tax8">税8%</button>
+      <button class="tax-btn"        onclick="setTax(10)" id="tax10">税10%</button>
+    </div>
+    <div class="tax-result" id="tax-result"></div>
+    <div class="amount-display">
       <span class="yen">¥</span>
       <input id="amount" type="text" inputmode="none" placeholder="0" readonly>
       <button class="clear-btn" onclick="clearAll()">✕</button>
     </div>
     <div class="numpad">
-      <button class="num-btn" onclick="input('1')">1</button>
-      <button class="num-btn" onclick="input('2')">2</button>
-      <button class="num-btn" onclick="input('3')">3</button>
-      <button class="num-btn" onclick="input('4')">4</button>
-      <button class="num-btn" onclick="input('5')">5</button>
-      <button class="num-btn" onclick="input('6')">6</button>
-      <button class="num-btn" onclick="input('7')">7</button>
-      <button class="num-btn" onclick="input('8')">8</button>
-      <button class="num-btn" onclick="input('9')">9</button>
-      <button class="num-btn zero" onclick="input('0')">0</button>
-      <button class="num-btn del" onclick="del()">⌫</button>
+      <button class="num-btn" onclick="numInput('1')">1</button>
+      <button class="num-btn" onclick="numInput('2')">2</button>
+      <button class="num-btn" onclick="numInput('3')">3</button>
+      <button class="num-btn" onclick="numInput('4')">4</button>
+      <button class="num-btn" onclick="numInput('5')">5</button>
+      <button class="num-btn" onclick="numInput('6')">6</button>
+      <button class="num-btn" onclick="numInput('7')">7</button>
+      <button class="num-btn" onclick="numInput('8')">8</button>
+      <button class="num-btn" onclick="numInput('9')">9</button>
+      <button class="num-btn zero" onclick="numInput('0')">0</button>
+      <button class="num-btn del"  onclick="numDel()">⌫</button>
     </div>
   </div>
 
-  <div class="results" id="results">
-    <p class="empty">金額を入力してください</p>
+  <div id="results">
+    <p class="empty-state">金額を入力すると<br>支払い提案が表示されます</p>
+  </div>
+</div>
+
+<!-- ===== 割り勘タブ ===== -->
+<div class="tab-content" id="tab-split">
+  <div class="card">
+    <div class="card-title">合計金額</div>
+    <div class="tax-row">
+      <button class="tax-btn active" onclick="setSplitTax(0)"  id="stax0">税なし</button>
+      <button class="tax-btn"        onclick="setSplitTax(8)"  id="stax8">税8%</button>
+      <button class="tax-btn"        onclick="setSplitTax(10)" id="stax10">税10%</button>
+    </div>
+    <div class="tax-result" id="stax-result"></div>
+    <div class="amount-display">
+      <span class="yen">¥</span>
+      <input id="split-amount" type="text" inputmode="none" placeholder="0" readonly>
+      <button class="clear-btn" onclick="clearSplit()">✕</button>
+    </div>
+    <div class="numpad">
+      <button class="num-btn" onclick="splitInput('1')">1</button>
+      <button class="num-btn" onclick="splitInput('2')">2</button>
+      <button class="num-btn" onclick="splitInput('3')">3</button>
+      <button class="num-btn" onclick="splitInput('4')">4</button>
+      <button class="num-btn" onclick="splitInput('5')">5</button>
+      <button class="num-btn" onclick="splitInput('6')">6</button>
+      <button class="num-btn" onclick="splitInput('7')">7</button>
+      <button class="num-btn" onclick="splitInput('8')">8</button>
+      <button class="num-btn" onclick="splitInput('9')">9</button>
+      <button class="num-btn zero" onclick="splitInput('0')">0</button>
+      <button class="num-btn del"  onclick="splitDel()">⌫</button>
+    </div>
   </div>
 
-  <script>
-    let current = '';
+  <div class="card">
+    <div class="card-title">人数</div>
+    <div class="split-input-row">
+      <span class="split-label">割り勘人数</span>
+      <div class="people-ctrl">
+        <button class="people-btn" onclick="changePeople(-1)">－</button>
+        <span class="people-num" id="people-num">2</span>
+        <button class="people-btn" onclick="changePeople(+1)">＋</button>
+      </div>
+      <span class="split-label">人</span>
+    </div>
+    <div id="split-result">
+      <p class="empty-state">金額を入力してください</p>
+    </div>
+  </div>
+</div>
 
-    function toggleHelp() {
-      const panel = document.getElementById('help-panel');
-      const icon = document.getElementById('help-icon');
-      const open = panel.classList.toggle('open');
-      icon.textContent = open ? '▼' : '▶';
-    }
+<!-- ===== 履歴タブ ===== -->
+<div class="tab-content" id="tab-history">
+  <div class="card">
+    <div class="card-title">計算履歴</div>
+    <div id="history-list">
+      <p class="empty-state">履歴はありません</p>
+    </div>
+    <button class="history-clear" onclick="clearHistory()" id="clear-history-btn" style="display:none">履歴をすべて削除</button>
+  </div>
+</div>
 
-    function input(d) {
-      if (current.length >= 7) return;
-      if (current === '' && d === '0') return;
-      current += d;
-      document.getElementById('amount').value = fmt(parseInt(current));
-      calculate();
-    }
+<!-- ボトムナビ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('calc',this)" id="nav-calc">
+    <span class="nav-icon">💴</span>
+    <span class="nav-label">計算</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('split',this)" id="nav-split">
+    <span class="nav-icon">👥</span>
+    <span class="nav-label">割り勘</span>
+  </button>
+  <button class="nav-btn" onclick="switchTab('history',this)" id="nav-history">
+    <span class="nav-icon">🕐</span>
+    <span class="nav-label">履歴</span>
+  </button>
+</nav>
 
-    function del() {
-      current = current.slice(0, -1);
-      document.getElementById('amount').value = current ? fmt(parseInt(current)) : '';
-      calculate();
-    }
+<script>
+  // ========== 共通 ==========
+  const ROUND_CHANGES = [0, 100, 500, 1000, 2000, 5000, 10000];
+  const COINS = [10000, 5000, 2000, 1000, 500, 100, 50, 10, 5, 1];
 
-    function clearAll() {
-      current = '';
-      document.getElementById('amount').value = '';
-      document.getElementById('results').innerHTML = '<p class="empty">金額を入力してください</p>';
-    }
+  function fmt(n) { return Math.ceil(n).toLocaleString('ja-JP'); }
 
-    function fmt(n) {
-      return n.toLocaleString('ja-JP');
-    }
-
-    // まとまった金額の定義: お釣りがこれらになるとよい
-    const ROUND_CHANGES = [0, 100, 500, 1000, 2000, 5000, 10000];
-
-    // 紙幣・硬貨の構成を求める
-    const COINS = [10000, 5000, 2000, 1000, 500, 100, 50, 10, 5, 1];
-
-    function breakdown(amount) {
-      let rest = amount;
-      const parts = [];
-      for (const c of COINS) {
-        const n = Math.floor(rest / c);
-        if (n > 0) {
-          const label = c >= 1000 ? `${c/1000}千円札` : `${c}円`;
-          parts.push(`${label}×${n}`);
-          rest -= c * n;
-        }
+  function breakdown(amount) {
+    let rest = amount;
+    const parts = [];
+    for (const c of COINS) {
+      const n = Math.floor(rest / c);
+      if (n > 0) {
+        const label = c >= 1000 ? `${c/1000}千円札` : `${c}円`;
+        parts.push(`${label}×${n}`);
+        rest -= c * n;
       }
-      return parts.join(' + ');
     }
+    return parts.join(' + ');
+  }
 
-    function calculate() {
-      if (!current) {
-        document.getElementById('results').innerHTML = '<p class="empty">金額を入力してください</p>';
-        return;
-      }
-      const total = parseInt(current);
-      if (total <= 0) return;
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'history') renderHistory();
+  }
 
-      const suggestions = [];
+  // ========== 計算タブ ==========
+  let current = '';
+  let taxRate = 0;
 
-      for (const change of ROUND_CHANGES) {
-        const pay = total + change;
-        // 支払い金額が実際に存在する紙幣・硬貨で払えるか（1円単位はすべて払える）
-        suggestions.push({ pay, change });
-      }
+  function setTax(rate) {
+    taxRate = rate;
+    document.querySelectorAll('.tax-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tax' + rate).classList.add('active');
+    updateTaxDisplay();
+    calculate();
+  }
 
-      // 支払い金額が小さい順、かつ合計以上に限定
-      suggestions.sort((a, b) => a.pay - b.pay);
-
-      let html = '<h2>支払い提案（お釣りがきりよくなります）</h2>';
-
-      suggestions.forEach((s, i) => {
-        const isExact = s.change === 0;
-        const isBest = !isExact && i === 1; // お釣り最小のまとまり
-        const cls = isExact ? 'exact' : (isBest ? 'best' : '');
-        const badge = isExact
-          ? '<span class="badge exact-badge">ちょうど</span>'
-          : (isBest ? '<span class="badge">おすすめ</span>' : '');
-
-        const changeColor = isExact ? 'zero' : 'round';
-        const changeText = isExact ? 'お釣りなし' : `¥${fmt(s.change)}`;
-        const coinHint = breakdown(s.pay);
-
-        html += `
-          <div class="result-item ${cls}">
-            <div>
-              <div class="pay-amount">¥${fmt(s.pay)} ${badge}</div>
-              <div class="coin-hint">${coinHint}</div>
-              <div class="pay-label">を支払う</div>
-            </div>
-            <div class="change-box">
-              <div class="change-amount ${changeColor}">${changeText}</div>
-              <div class="change-label">お釣り</div>
-            </div>
-          </div>`;
-      });
-
-      document.getElementById('results').innerHTML = html;
+  function updateTaxDisplay() {
+    const raw = parseInt(current) || 0;
+    if (raw === 0 || taxRate === 0) {
+      document.getElementById('tax-result').textContent = '';
+      return;
     }
+    const taxed = Math.ceil(raw * (1 + taxRate / 100));
+    document.getElementById('tax-result').textContent =
+      `税抜 ¥${fmt(raw)} → 税込 ¥${fmt(taxed)}（${taxRate}%）`;
+  }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
+  function getTotalWithTax() {
+    const raw = parseInt(current) || 0;
+    return taxRate === 0 ? raw : Math.ceil(raw * (1 + taxRate / 100));
+  }
+
+  function numInput(d) {
+    if (current.length >= 7) return;
+    if (current === '' && d === '0') return;
+    current += d;
+    document.getElementById('amount').value = fmt(parseInt(current));
+    updateTaxDisplay();
+    calculate();
+  }
+
+  function numDel() {
+    current = current.slice(0, -1);
+    document.getElementById('amount').value = current ? fmt(parseInt(current)) : '';
+    updateTaxDisplay();
+    calculate();
+  }
+
+  function clearAll() {
+    current = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('tax-result').textContent = '';
+    document.getElementById('results').innerHTML = '<p class="empty-state">金額を入力すると<br>支払い提案が表示されます</p>';
+  }
+
+  function calculate() {
+    if (!current) {
+      document.getElementById('results').innerHTML = '<p class="empty-state">金額を入力すると<br>支払い提案が表示されます</p>';
+      return;
     }
-  </script>
+    const total = getTotalWithTax();
+    if (total <= 0) return;
+
+    const suggestions = ROUND_CHANGES.map(change => ({ pay: total + change, change }));
+    suggestions.sort((a, b) => a.pay - b.pay);
+
+    let html = '';
+    suggestions.forEach((s, i) => {
+      const isExact = s.change === 0;
+      const isBest  = !isExact && i === 1;
+      const cls     = isExact ? 'exact' : (isBest ? 'best' : '');
+      const badge   = isExact
+        ? '<span class="badge blue">ちょうど</span>'
+        : (isBest ? '<span class="badge green">おすすめ</span>' : '');
+      const changeColor = isExact ? 'zero' : 'round';
+      const changeText  = isExact ? 'お釣りなし' : `¥${fmt(s.change)}`;
+
+      html += `
+        <div class="result-item ${cls}" onclick="saveHistory(${total},${s.pay},${s.change})">
+          <div>
+            <div class="pay-amount">¥${fmt(s.pay)} ${badge}</div>
+            <div class="pay-sub">${breakdown(s.pay)}</div>
+            <div class="pay-sub">を支払う</div>
+          </div>
+          <div>
+            <div class="change-amt ${changeColor}">${changeText}</div>
+            <div class="change-lbl">お釣り</div>
+          </div>
+        </div>`;
+    });
+
+    document.getElementById('results').innerHTML = html;
+  }
+
+  // ========== 割り勘タブ ==========
+  let splitCurrent = '';
+  let splitTaxRate = 0;
+  let people = 2;
+
+  function setSplitTax(rate) {
+    splitTaxRate = rate;
+    document.querySelectorAll('#tab-split .tax-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('stax' + rate).classList.add('active');
+    updateSplitTaxDisplay();
+    calcSplit();
+  }
+
+  function updateSplitTaxDisplay() {
+    const raw = parseInt(splitCurrent) || 0;
+    if (raw === 0 || splitTaxRate === 0) {
+      document.getElementById('stax-result').textContent = '';
+      return;
+    }
+    const taxed = Math.ceil(raw * (1 + splitTaxRate / 100));
+    document.getElementById('stax-result').textContent =
+      `税抜 ¥${fmt(raw)} → 税込 ¥${fmt(taxed)}（${splitTaxRate}%）`;
+  }
+
+  function getSplitTotal() {
+    const raw = parseInt(splitCurrent) || 0;
+    return splitTaxRate === 0 ? raw : Math.ceil(raw * (1 + splitTaxRate / 100));
+  }
+
+  function splitInput(d) {
+    if (splitCurrent.length >= 7) return;
+    if (splitCurrent === '' && d === '0') return;
+    splitCurrent += d;
+    document.getElementById('split-amount').value = fmt(parseInt(splitCurrent));
+    updateSplitTaxDisplay();
+    calcSplit();
+  }
+
+  function splitDel() {
+    splitCurrent = splitCurrent.slice(0, -1);
+    document.getElementById('split-amount').value = splitCurrent ? fmt(parseInt(splitCurrent)) : '';
+    updateSplitTaxDisplay();
+    calcSplit();
+  }
+
+  function clearSplit() {
+    splitCurrent = '';
+    document.getElementById('split-amount').value = '';
+    document.getElementById('stax-result').textContent = '';
+    document.getElementById('split-result').innerHTML = '<p class="empty-state">金額を入力してください</p>';
+  }
+
+  function changePeople(delta) {
+    people = Math.max(2, Math.min(99, people + delta));
+    document.getElementById('people-num').textContent = people;
+    calcSplit();
+  }
+
+  function calcSplit() {
+    const total = getSplitTotal();
+    if (!splitCurrent || total <= 0) {
+      document.getElementById('split-result').innerHTML = '<p class="empty-state">金額を入力してください</p>';
+      return;
+    }
+    const perPerson = Math.ceil(total / people);
+    const remainder = total % people;
+
+    document.getElementById('split-result').innerHTML = `
+      <div class="split-result-box">
+        <div class="split-per">¥${fmt(perPerson)}</div>
+        <div class="split-per-label">1人あたり（切り上げ）</div>
+        <div class="split-detail">合計 ¥${fmt(total)} ÷ ${people}人${remainder > 0 ? `（端数 ¥${remainder}）` : '（割り切れます）'}</div>
+      </div>`;
+  }
+
+  // ========== 履歴 ==========
+  function saveHistory(total, pay, change) {
+    const history = JSON.parse(localStorage.getItem('otsuri_history') || '[]');
+    history.unshift({
+      total, pay, change,
+      tax: taxRate,
+      time: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    });
+    if (history.length > 50) history.pop();
+    localStorage.setItem('otsuri_history', JSON.stringify(history));
+  }
+
+  function renderHistory() {
+    const history = JSON.parse(localStorage.getItem('otsuri_history') || '[]');
+    const list = document.getElementById('history-list');
+    const btn  = document.getElementById('clear-history-btn');
+    if (history.length === 0) {
+      list.innerHTML = '<p class="empty-state">履歴はありません</p>';
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'block';
+    list.innerHTML = history.map(h => `
+      <div class="history-item">
+        <div>
+          <div class="history-total">合計 ¥${fmt(h.total)}${h.tax ? ` <small>（税${h.tax}%込）</small>` : ''}</div>
+          <div class="history-sub">支払 ¥${fmt(h.pay)} → お釣り ${h.change === 0 ? 'なし' : '¥' + fmt(h.change)}</div>
+        </div>
+        <div>
+          <div class="history-time">${h.time}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function clearHistory() {
+    if (!confirm('履歴をすべて削除しますか？')) return;
+    localStorage.removeItem('otsuri_history');
+    renderHistory();
+  }
+
+  // ========== PWA ==========
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 </body>
 </html>
