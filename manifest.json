@@ -1,0 +1,22 @@
+{
+  "name": "まとまりお釣り計算",
+  "short_name": "お釣り計算",
+  "description": "まとまったお釣りをもらうための支払い計算アプリ",
+  "start_url": "/otsuri-app/",
+  "display": "standalone",
+  "background_color": "#f0f4f8",
+  "theme_color": "#4299e1",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
