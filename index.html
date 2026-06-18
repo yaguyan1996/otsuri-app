@@ -300,8 +300,8 @@
 
 
 
-      // 支払い候補を生成（1円単位で全探索）
-      const candidates = [{ pay: total, change: 0 }]; // ちょうど払い
+      // 支払い候補を生成（1円単位で全探索、ちょうど払いは除く）
+      const candidates = [];
       for (let p = total + 1; p <= total + 15000; p++) {
         candidates.push({ pay: p, change: p - total });
       }
@@ -325,17 +325,14 @@
       let html = '<div class="section-label">支払い提案（お釣りのコインが少ない順）</div>';
 
       shown.forEach((s, i) => {
-        const isExact = s.change === 0;
-        const isBest  = !isExact && i === 1;
-        const cls     = isExact ? 'exact' : (isBest ? 'best' : '');
-        const badge   = isExact
-          ? '<span class="badge blue">ちょうど</span>'
-          : (isBest ? '<span class="badge green">おすすめ</span>' : '');
+        const isBest  = i === 0;
+        const cls     = isBest ? 'best' : '';
+        const badge   = isBest ? '<span class="badge green">おすすめ</span>' : '';
 
-        const changeColor = s.cc === 0 ? 'zero' : s.cc <= 2 ? 'good' : 'normal';
-        const changeText  = s.cc === 0 ? 'なし' : `¥${fmt(s.change)}`;
-        const chipClass   = s.cc === 0 ? 'chip-0' : s.cc === 1 ? 'chip-1' : s.cc === 2 ? 'chip-2' : 'chip-n';
-        const chipLabel   = s.cc === 0 ? 'お釣りなし' : `お釣り ${s.cc}枚`;
+        const changeColor = s.cc <= 2 ? 'good' : 'normal';
+        const changeText  = `¥${fmt(s.change)}`;
+        const chipClass   = s.cc === 1 ? 'chip-1' : s.cc === 2 ? 'chip-2' : 'chip-n';
+        const chipLabel   = `お釣り ${s.cc}枚`;
         const changeBreak = s.change > 0 ? breakdown(s.change) : '';
 
         html += `
