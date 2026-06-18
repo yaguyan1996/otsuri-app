@@ -215,7 +215,7 @@
       お釣りが最も少ない払い方<br>
       <span style="background:#3B82F6;color:#fff;border-radius:5px;padding:1px 7px;font-size:0.65rem;font-weight:700">ちょうど</span>
       ぴったり払う（お釣りなし）<br>
-      💡 ヒントが出たら少し追加すると10円単位に！
+      1円単位まで対応しています
     </div>
   </div>
 
@@ -239,11 +239,6 @@
       <button class="num-btn zero" onclick="inp('0')">0</button>
       <button class="num-btn del"  onclick="del()">⌫</button>
     </div>
-  </div>
-
-  <div class="hint-box" id="hint-box">
-    <span>💡</span>
-    <span id="hint-text"></span>
   </div>
 
   <div class="results" id="results">
@@ -296,7 +291,6 @@
     function clearAll() {
       cur = '';
       document.getElementById('amount').value = '';
-      document.getElementById('hint-box').className = 'hint-box';
       document.getElementById('results').innerHTML = '<p class="empty">金額を入力すると<br>払い方を提案します</p>';
     }
 
@@ -304,24 +298,11 @@
       const total = parseInt(cur) || 0;
       if (!cur || total <= 0) { clearAll(); return; }
 
-      // 追加コインヒント（1〜9円の端数）
-      const ones = total % 10;
-      const hintBox = document.getElementById('hint-box');
-      if (ones > 0) {
-        let coins = [];
-        let rest = ones;
-        if (rest >= 5) { coins.push('5円×1'); rest -= 5; }
-        if (rest > 0)  { coins.push(`1円×${rest}`); }
-        document.getElementById('hint-text').innerHTML =
-          `財布から <strong>${ones}円</strong>（${coins.join('+')}）を追加 → お釣りが10円単位に！`;
-        hintBox.className = 'hint-box show';
-      } else {
-        hintBox.className = 'hint-box';
-      }
 
-      // 支払い候補を生成（お釣りコイン枚数最小順）
+
+      // 支払い候補を生成（1円単位で全探索）
       const candidates = [{ pay: total, change: 0 }]; // ちょうど払い
-      for (let p = total + 10; p <= total + 15000; p += 10) {
+      for (let p = total + 1; p <= total + 15000; p++) {
         candidates.push({ pay: p, change: p - total });
       }
       candidates.sort((a,b) =>
